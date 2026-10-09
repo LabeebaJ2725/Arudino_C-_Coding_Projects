@@ -1,0 +1,31 @@
+struct IoPin {
+  uint8_t pin;
+  bool    isAnalog;
+};
+
+const IoPin IO_PINS[] = {
+  {2,false},{3,false},{4,false},{5,false},{6,false},{7,false},
+  {8,false},{9,false},{10,false},{11,false},{12,false},{13,false},
+  {A0,true},{A1,true},{A2,true},{A3,true},{A4,true},{A5,true}
+};
+const int PIN_COUNT = sizeof(IO_PINS) / sizeof(IO_PINS[0]);  // 18, auto-computed
+
+void setup() {
+  Serial.begin(9600);
+  for (int i = 0; i < PIN_COUNT; i++) {
+    if (IO_PINS[i].isAnalog) {
+      Serial.print(F("Analog A"));
+      Serial.print(IO_PINS[i].pin - A0);
+      Serial.print(F(" = "));
+      Serial.println(analogRead(IO_PINS[i].pin));
+    } else {
+      pinMode(IO_PINS[i].pin, INPUT);
+      Serial.print(F("Digital "));
+      Serial.print(IO_PINS[i].pin);
+      Serial.print(F(" = "));
+      Serial.println(digitalRead(IO_PINS[i].pin));
+    }
+  }
+}
+
+void loop() {} 
