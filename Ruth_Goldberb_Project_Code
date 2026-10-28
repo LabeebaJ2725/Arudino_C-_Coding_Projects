@@ -1,0 +1,253 @@
+#include <Servo.h>
+
+// ========================================
+// RUBE GOLDBERG MACHINE
+// Arduino UNO R4 WiFi
+// ========================================
+
+// ULTRASONIC SENSOR PINS
+const int trig1 = 2;
+const int echo1 = 3;
+
+const int trig2 = 4;
+const int echo2 = 5;
+
+const int trig3 = 6;
+const int echo3 = 7;
+
+// SERVO PINS
+const int servoPin1 = 9;
+const int servoPin2 = 10;
+
+// RELAY AND LED
+const int relayPin = 8;
+const int LED = 13;
+
+// SERVO OBJECTS
+Servo my_servo;
+Servo my_servo2;
+
+// SERVO POSITIONS
+const int CLOSED1 = 0;
+const int OPEN1 = 90;
+
+const int CLOSED2 = 0;
+const int OPEN2 = 90;
+
+// SENSOR DISTANCES (cm)
+const float legoDistance = 10.0;
+const float marbleDistance = 8.0;
+const float dominoDistance = 10.0;
+
+// RELAY SETTINGS
+// Change these if relay is active HIGH
+const int RELAY_ON = LOW;
+const int RELAY_OFF = HIGH;
+
+// ========================================
+// DELAY SETTINGS (milliseconds)
+// 1000 milliseconds = 1 second
+// ========================================
+
+const int legoDelay = 1000;
+const int marbleDelay = 1000;
+const int dominoDelay = 1000;
+
+// How long the solenoid stays on
+const int solenoidTime = 500;
+
+// MACHINE STAGES
+// 0 = Waiting for LEGO
+// 1 = Waiting for marble
+// 2 = Waiting for domino
+// 3 = Finished
+int stage = 0;
+
+// ========================================
+// ULTRASONIC SENSOR FUNCTION
+// ========================================
+
+float readDistance(int trigPin, int echoPin) {
+
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+
+  digitalWrite(trigPin, LOW);
+
+  unsigned long duration =
+      pulseIn(echoPin, HIGH, 25000UL);
+
+  if (duration == 0) {
+    return -1;
+  }
+
+  float distance = duration * 0.0343 / 2.0;
+
+  return distance;
+}
+
+// ========================================
+// SETUP
+// ========================================
+
+void setup() {
+
+  Serial.begin(115200);
+
+  // Ultrasonic sensors
+  pinMode(trig1, OUTPUT);
+  pinMode(echo1, INPUT);
+
+  pinMode(trig2, OUTPUT);
+  pinMode(echo2, INPUT);
+
+  pinMode(trig3, OUTPUT);
+  pinMode(echo3, INPUT);
+
+  // LED
+  pinMode(LED, OUTPUT);
+  digitalWrite(LED, LOW);
+
+  // Relay OFF
+  digitalWrite(relayPin, RELAY_OFF);
+  pinMode(relayPin, OUTPUT);
+
+  // Attach servos
+  my_servo.attach(servoPin1);
+  my_servo2.attach(servoPin2);
+
+  // Starting positions
+  my_servo.write(CLOSED1);
+  my_servo2.write(CLOSED2);
+
+  delay(1500);
+
+  Serial.println("Rube Goldberg Machine Ready!");
+  Serial.println("Waiting for LEGO building...");
+}
+
+// ========================================
+// MAIN LOOP
+// ========================================
+
+void loop() {
+
+  // =====================================
+  // STAGE 0: LEGO BUILDING FALLS
+  // =====================================
+
+  if (stage == 0) {
+
+    float distance1 =
+        readDistance(trig1, echo1);
+
+    Serial.print("LEGO Sensor: ");
+    Serial.println(distance1);
+
+    if (distance1 > 0 &&
+        distance1 < legoDistance) {
+
+      Serial.println("LEGO Building Detected!");
+
+      // WAIT BEFORE RELEASING MARBLE
+      Serial.println("Waiting 1 second...");
+      delay(legoDelay);
+
+      // Open Servo 1
+      my_servo.write(OPEN1);
+
+      Serial.println("Servo 1 OPEN");
+      Serial.println("Marble Released!");
+
+      stage = 1;
+
+      delay(500);
+    }
+  }
+
+  // =====================================
+  // STAGE 1: MARBLE DETECTED
+  // =====================================
+
+  else if (stage == 1) {
+
+    float distance2 =
+        readDistance(trig2, echo2);
+
+    Serial.print("Marble Sensor: ");
+    Serial.println(distance2);
+
+    if (distance2 > 0 &&
+        distance2 < marbleDistance) {
+
+      Serial.println("Marble Detected!");
+
+      // WAIT BEFORE RELEASING TENNIS BALL
+      Serial.println("Waiting 1 second...");
+      delay(marbleDelay);
+
+      // Open Servo 2
+      my_servo2.write(OPEN2);
+
+      Serial.println("Servo 2 OPEN");
+      Serial.println("Tennis Ball Released!");
+
+      stage = 2;
+
+      delay(500);
+    }
+  }
+
+  // =====================================
+  // STAGE 2: LAST DOMINO FALLS
+  // =====================================
+
+  else if (stage == 2) {
+
+    float distance3 =
+        readDistance(trig3, echo3);
+
+    Serial.print("Domino Sensor: ");
+    Serial.println(distance3);
+
+    if (distance3 > 0 &&
+        distance3 < dominoDistance) {
+
+      Serial.println("Last Domino Detected!");
+
+      // WAIT BEFORE ACTIVATING SOLENOID
+      Serial.println("Waiting 1 second...");
+      delay(dominoDelay);
+
+      // Activate relay
+      digitalWrite(relayPin, RELAY_ON);
+      digitalWrite(LED, HIGH);
+
+      Serial.println("Solenoid ACTIVATED!");
+      Serial.println("Block Released!");
+
+      delay(solenoidTime);
+
+      // Turn relay OFF
+      digitalWrite(relayPin, RELAY_OFF);
+
+      Serial.println("Solenoid OFF");
+      Serial.println("Machine Complete!");
+
+      stage = 3;
+    }
+  }
+
+  // =====================================
+  // STAGE 3: FINISHED
+  // =====================================
+
+  else if (stage == 3) {
+    // Finished; reset Arduino for next run
+  }
+
+  delay(30);
+}
